@@ -6,7 +6,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AppContext, DecisionResponse } from "../types";
 
-const GEMINI_API_KEY = "AIzaSyDVr-5zwc9te2X4NMff_jai5FaBUIv34lw";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "AIzaSyDVr-5zwc9te2X4NMff_jai5FaBUIv34lw";
 
 export class DecisionEngine {
   private ai: GoogleGenAI;

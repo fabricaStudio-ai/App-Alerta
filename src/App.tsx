@@ -58,6 +58,9 @@ export default function App() {
   const [silentMode, setSilentMode] = useState(false);
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark' || 
       (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -121,13 +124,58 @@ export default function App() {
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
+      const result = await signInWithPopup(auth, provider);
+      console.log('Login successful:', result.user);
+    } catch (error: any) {
       console.error("Login failed:", error);
+      if (error.code === 'auth/popup-blocked') {
+        alert('Popup bloqueado. Permita popups para este site.');
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        console.log('Popup fechado pelo usuário');
+      } else {
+        alert(`Erro no login: ${error.message}`);
+      }
     }
   };
 
   const handleLogout = () => signOut(auth);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+        // Aqui você pode processar o áudio ou enviá-lo para um serviço de reconhecimento de voz
+        console.log('Recording stopped, audio blob created:', audioBlob);
+        // Por enquanto, vamos apenas converter para texto simulado
+        setInput('Áudio gravado - reconhecimento de voz não implementado ainda');
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      setMediaRecorder(recorder);
+      setAudioChunks(chunks);
+      recorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+    }
+  };
 
   const handleProcess = async () => {
     if (!input.trim()) return;
@@ -422,7 +470,14 @@ Localização Salva
               <Send size={20} />
             )}
           </button>
-          <button className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl flex items-center justify-center transition-all active:scale-90">
+          <button 
+            onClick={isRecording ? stopRecording : startRecording}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 ${
+              isRecording 
+                ? 'bg-red-500 text-white animate-pulse' 
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+            }`}
+          >
             <Mic size={20} />
           </button>
         </div>
