@@ -1,0 +1,5 @@
+{
+  "name": "SafeGuard AI",
+  "description": "Assistente inteligente de segurança pessoal para situações de risco, assédio e emergência.",
+  "requestFramePermissions": ["microphone", "geolocation"]
+}
